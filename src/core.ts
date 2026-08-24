@@ -93,6 +93,11 @@ export function insertByPromptOrder<T>(
   collection.splice(insertionIndex, 0, item);
 }
 
+/** Preserve an event-owned array reference while replacing its contents. */
+export function replaceArrayContents<T>(target: T[], source: readonly T[]): void {
+  target.splice(0, target.length, ...source);
+}
+
 export function partitionDepthCandidates(candidates: readonly DepthCandidate[], config: DepthRelocatorConfig) {
   const before: DepthCandidate[] = [];
   const after: DepthCandidate[] = [];

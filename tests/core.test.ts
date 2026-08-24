@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, getChatHistoryIdentifier, getDepthInsertionIndex, insertByPromptOrder, partitionDepthCandidates, type DepthCandidate } from '@/core';
+import { DEFAULT_CONFIG, getChatHistoryIdentifier, getDepthInsertionIndex, insertByPromptOrder, partitionDepthCandidates, replaceArrayContents, type DepthCandidate } from '@/core';
 
 const candidates: DepthCandidate[] = Array.from({ length: 100 }, (_, depth) => ({
   depth,
@@ -42,6 +42,16 @@ describe('Depth selection and partitioning', () => {
       'stDepthRelocatorAfter',
       'controlPrompts',
     ]);
+  });
+
+  it('replaces event arrays in place', () => {
+    const target = ['old'];
+    const reference = target;
+
+    replaceArrayContents(target, ['new', 'value']);
+
+    expect(target).toEqual(['new', 'value']);
+    expect(reference).toBe(target);
   });
 
   it('routes D0-D5 to the after bucket and leaves other depths unselected', () => {

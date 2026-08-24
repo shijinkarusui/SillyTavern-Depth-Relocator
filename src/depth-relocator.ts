@@ -7,6 +7,7 @@ import {
   insertByPromptOrder,
   parseConfig,
   partitionDepthCandidates,
+  replaceArrayContents,
   type DepthCandidate,
   type DepthRelocatorConfig,
 } from '@/core';
@@ -288,7 +289,7 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   chatHistory.collection = chatHistory.getCollection().filter(item => !(item instanceof Message && movedIds.has(item.identifier)));
 
   replaceRuntimeMarkers(root, promptCollection, beforeMessages, afterMessages);
-  event.chat = flattenRoot(root);
+  replaceArrayContents(event.chat, flattenRoot(root));
   resetWarning();
 }
 
