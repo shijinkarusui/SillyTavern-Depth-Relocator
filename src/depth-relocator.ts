@@ -413,7 +413,7 @@ export function initDepthRelocator(): void {
     }
     generationContext = { type: String(type || 'normal'), chatLength: 0 };
   });
-  eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (event: unknown) => void rewriteReadyPrompt(event as PromptReadyEvent));
+  eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (event: unknown) => rewriteReadyPrompt(event as PromptReadyEvent));
   eventSource.on(event_types.GENERATION_STOPPED, () => {
     generationContext = null;
   });
