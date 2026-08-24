@@ -1,6 +1,6 @@
 # SillyTavern Depth 提示词重排
 
-这是一个面向 SillyTavern 1.14.0 Chat Completion 的第三方扩展。
+这是一个面向 SillyTavern 1.14.0 及以上版本 Chat Completion 的第三方扩展。
 
 它会把带有 Depth 的提示词从 Chat History 中移到两个可由 Prompt Manager 拖动的 Maker 标记之间：
 

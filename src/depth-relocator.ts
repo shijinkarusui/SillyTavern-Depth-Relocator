@@ -172,6 +172,20 @@ function sameContent(message: Message, candidate: DepthCandidate): boolean {
   return message.role === candidate.role && textContent(message.content) === candidate.content;
 }
 
+function runtimeItemIdentifier(item: Message | MessageCollection | undefined): string {
+  if (item instanceof MessageCollection || item instanceof Message) return item.identifier || '未命名对象';
+  return '空位';
+}
+
+function hasRuntimeMarker(rootCollection: Array<Message | MessageCollection | undefined>, index: number, identifier: string, label: string): boolean {
+  const item = rootCollection[index];
+  if (item instanceof MessageCollection && item.identifier === identifier) return true;
+
+  const actual = runtimeItemIdentifier(item);
+  warnOnce(`${label} Maker 没有对应的酒馆运行时容器（当前检测到：${actual}），本次不重排。`);
+  return false;
+}
+
 function flattenRoot(root: MessageCollection): Array<Record<string, unknown>> {
   const result: Array<Record<string, unknown>> = [];
   for (const item of root.getCollection()) {
@@ -252,14 +266,8 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
 
   const movedIds = new Set([...beforeMessages, ...afterMessages].map(message => message.identifier));
   const rootCollection = root.getCollection();
-  if (rootCollection[beforeIndex]) {
-    warnOnce('“深度前”Maker 的运行时位置被其他内容占用，本次不重排。');
-    return;
-  }
-  if (rootCollection[afterIndex]) {
-    warnOnce('“深度后”Maker 的运行时位置被其他内容占用，本次不重排。');
-    return;
-  }
+  if (!hasRuntimeMarker(rootCollection, beforeIndex, BEFORE_MARKER_ID, '“深度前”')) return;
+  if (!hasRuntimeMarker(rootCollection, afterIndex, AFTER_MARKER_ID, '“深度后”')) return;
 
   chatHistory.collection = chatHistory.getCollection().filter(item => !(item instanceof Message && movedIds.has(item.identifier)));
 

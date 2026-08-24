@@ -30,6 +30,7 @@ declare module '@sillytavern/scripts/openai' {
     tool_calls?: unknown;
   }
   export class MessageCollection {
+    identifier: string;
     collection: Array<Message | MessageCollection | undefined>;
     constructor(identifier: string, ...items: Message[]);
     getCollection(): Array<Message | MessageCollection | undefined>;
