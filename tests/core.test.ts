@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, getChatHistoryIdentifier, getDepthInsertionIndex, partitionDepthCandidates, type DepthCandidate } from '@/core';
+import { DEFAULT_CONFIG, getChatHistoryIdentifier, getDepthInsertionIndex, insertByPromptOrder, partitionDepthCandidates, type DepthCandidate } from '@/core';
 
 const candidates: DepthCandidate[] = Array.from({ length: 100 }, (_, depth) => ({
   depth,
@@ -16,6 +16,32 @@ describe('Depth selection and partitioning', () => {
   it('clamps depths past the available history like Array#splice', () => {
     expect(getDepthInsertionIndex(3, 99, 0)).toBe(3);
     expect(getDepthInsertionIndex(3, 99, 2)).toBe(5);
+  });
+
+  it('inserts runtime markers without overwriting neighboring items', () => {
+    const order = new Map([
+      ['main', 0],
+      ['stDepthRelocatorBefore', 1],
+      ['chatHistory', 2],
+      ['stDepthRelocatorAfter', 3],
+    ]);
+    const collection: Array<{ identifier: string } | undefined> = [
+      { identifier: 'main' },
+      { identifier: 'chatHistory' },
+      { identifier: 'controlPrompts' },
+    ];
+    const getPromptIndex = (item: { identifier: string } | undefined): number | null => order.get(item?.identifier ?? '') ?? null;
+
+    insertByPromptOrder(collection, 1, getPromptIndex, { identifier: 'stDepthRelocatorBefore' });
+    insertByPromptOrder(collection, 3, getPromptIndex, { identifier: 'stDepthRelocatorAfter' });
+
+    expect(collection.map(item => item?.identifier)).toEqual([
+      'main',
+      'stDepthRelocatorBefore',
+      'chatHistory',
+      'stDepthRelocatorAfter',
+      'controlPrompts',
+    ]);
   });
 
   it('routes D0-D5 to the after bucket and leaves other depths unselected', () => {

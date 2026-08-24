@@ -63,6 +63,36 @@ export function getDepthInsertionIndex(baseChatLength: number, depth: number, in
   return Math.min(Math.max(0, depth), Math.max(0, baseChatLength)) + Math.max(0, insertedBefore);
 }
 
+/** Insert an item according to prompt order without treating it as a runtime array index. */
+export function insertByPromptOrder<T>(
+  collection: T[],
+  targetIndex: number,
+  getPromptIndex: (item: T) => number | null,
+  item: T,
+): void {
+  let lastKnownIndex = -1;
+  let firstUnknownIndex = -1;
+  let insertionIndex = collection.length;
+
+  for (let index = 0; index < collection.length; index++) {
+    const promptIndex = getPromptIndex(collection[index]);
+    if (promptIndex === null) {
+      if (firstUnknownIndex < 0) firstUnknownIndex = index;
+      continue;
+    }
+    if (promptIndex > targetIndex) {
+      insertionIndex = index;
+      break;
+    }
+    lastKnownIndex = index;
+  }
+
+  if (insertionIndex === collection.length) {
+    insertionIndex = lastKnownIndex >= 0 ? lastKnownIndex + 1 : firstUnknownIndex >= 0 ? firstUnknownIndex : collection.length;
+  }
+  collection.splice(insertionIndex, 0, item);
+}
+
 export function partitionDepthCandidates(candidates: readonly DepthCandidate[], config: DepthRelocatorConfig) {
   const before: DepthCandidate[] = [];
   const after: DepthCandidate[] = [];

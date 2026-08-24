@@ -31,12 +31,12 @@ describe('Maker bootstrap', () => {
     expect(result.status).toEqual({ before: true, after: true, chatHistory: true });
     expect(preset.prompts.find(prompt => prompt.identifier === 'stDepthRelocatorBefore')).toMatchObject({
       marker: true,
-      system_prompt: false,
+      system_prompt: true,
       injection_position: 0,
     });
     expect(preset.prompts.find(prompt => prompt.identifier === 'stDepthRelocatorAfter')).toMatchObject({
       marker: true,
-      system_prompt: false,
+      system_prompt: true,
       injection_position: 0,
     });
   });
@@ -59,7 +59,7 @@ describe('Maker bootstrap', () => {
     for (const identifier of ['stDepthRelocatorBefore', 'stDepthRelocatorAfter']) {
       const prompt = preset.prompts.find(item => item.identifier === identifier);
       if (!prompt) throw new Error(`Missing test prompt: ${identifier}`);
-      prompt.system_prompt = true;
+      prompt.system_prompt = false;
       prompt.injection_position = 1;
     }
 
@@ -70,8 +70,8 @@ describe('Maker bootstrap', () => {
       system_prompt: prompt.system_prompt,
       injection_position: prompt.injection_position,
     }))).toEqual([
-      { system_prompt: false, injection_position: 0 },
-      { system_prompt: false, injection_position: 0 },
+      { system_prompt: true, injection_position: 0 },
+      { system_prompt: true, injection_position: 0 },
     ]);
   });
 

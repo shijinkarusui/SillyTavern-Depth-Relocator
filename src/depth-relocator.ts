@@ -4,6 +4,7 @@ import {
   DEFAULT_CONFIG,
   getChatHistoryIdentifier,
   getDepthInsertionIndex,
+  insertByPromptOrder,
   parseConfig,
   partitionDepthCandidates,
   type DepthCandidate,
@@ -172,18 +173,37 @@ function sameContent(message: Message, candidate: DepthCandidate): boolean {
   return message.role === candidate.role && textContent(message.content) === candidate.content;
 }
 
-function runtimeItemIdentifier(item: Message | MessageCollection | undefined): string {
-  if (item instanceof MessageCollection || item instanceof Message) return item.identifier || '未命名对象';
-  return '空位';
+function runtimePromptIndex(item: Message | MessageCollection, promptCollection: { index(identifier: string): number }): number | null {
+  const index = promptCollection.index(item.identifier);
+  return index >= 0 ? index : null;
 }
 
-function hasRuntimeMarker(rootCollection: Array<Message | MessageCollection | undefined>, index: number, identifier: string, label: string): boolean {
-  const item = rootCollection[index];
-  if (item instanceof MessageCollection && item.identifier === identifier) return true;
+function replaceRuntimeMarkers(
+  root: MessageCollection,
+  promptCollection: { index(identifier: string): number },
+  beforeMessages: Message[],
+  afterMessages: Message[],
+): void {
+  const markerIdentifiers = new Set([BEFORE_MARKER_ID, AFTER_MARKER_ID]);
+  const rootCollection = root.getCollection().filter(
+    (item): item is Message | MessageCollection => item !== undefined
+      && !(item instanceof MessageCollection && markerIdentifiers.has(item.identifier)),
+  );
+  const getPromptIndex = (item: Message | MessageCollection): number | null => runtimePromptIndex(item, promptCollection);
 
-  const actual = runtimeItemIdentifier(item);
-  warnOnce(`${label} Maker 没有对应的酒馆运行时容器（当前检测到：${actual}），本次不重排。`);
-  return false;
+  insertByPromptOrder(
+    rootCollection,
+    promptCollection.index(BEFORE_MARKER_ID),
+    getPromptIndex,
+    new MessageCollection(BEFORE_MARKER_ID, ...beforeMessages),
+  );
+  insertByPromptOrder(
+    rootCollection,
+    promptCollection.index(AFTER_MARKER_ID),
+    getPromptIndex,
+    new MessageCollection(AFTER_MARKER_ID, ...afterMessages),
+  );
+  root.collection = rootCollection;
 }
 
 function flattenRoot(root: MessageCollection): Array<Record<string, unknown>> {
@@ -265,16 +285,9 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   if (beforeMessages.length === 0 && afterMessages.length === 0) return;
 
   const movedIds = new Set([...beforeMessages, ...afterMessages].map(message => message.identifier));
-  const rootCollection = root.getCollection();
-  if (!hasRuntimeMarker(rootCollection, beforeIndex, BEFORE_MARKER_ID, '“深度前”')) return;
-  if (!hasRuntimeMarker(rootCollection, afterIndex, AFTER_MARKER_ID, '“深度后”')) return;
-
   chatHistory.collection = chatHistory.getCollection().filter(item => !(item instanceof Message && movedIds.has(item.identifier)));
 
-  const beforeCollection = new MessageCollection(BEFORE_MARKER_ID, ...beforeMessages);
-  const afterCollection = new MessageCollection(AFTER_MARKER_ID, ...afterMessages);
-  rootCollection[beforeIndex] = beforeCollection;
-  rootCollection[afterIndex] = afterCollection;
+  replaceRuntimeMarkers(root, promptCollection, beforeMessages, afterMessages);
   event.chat = flattenRoot(root);
   resetWarning();
 }

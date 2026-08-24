@@ -26,11 +26,9 @@ function markerPrompt(identifier: string, name: string): PromptLike {
     name,
     role: 'system',
     content: '',
-    // Custom markers must be treated as relative preset prompts by
-    // SillyTavern so ChatCompletion creates a runtime MessageCollection for
-    // their identifiers. Built-in markers have dedicated insertion paths;
-    // third-party markers do not.
-    system_prompt: false,
+    // Keep custom markers out of SillyTavern's relative prompt auto-placement.
+    // The relocator owns their runtime collections and inserts them safely.
+    system_prompt: true,
     injection_position: 0,
     marker: true,
   };
@@ -56,8 +54,8 @@ function ensurePrompt(prompts: PromptLike[], identifier: string, name: string): 
     prompt.content = '';
     changed = true;
   }
-  if (prompt.system_prompt !== false) {
-    prompt.system_prompt = false;
+  if (prompt.system_prompt !== true) {
+    prompt.system_prompt = true;
     changed = true;
   }
   if (prompt.injection_position !== 0) {
