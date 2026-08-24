@@ -1,15 +1,14 @@
 {
-  "display_name": "<插件名称>",
+  "display_name": "Depth 提示词重排",
   "loading_order": 120,
   "requires": [],
   "optional": [],
   "js": "dist/index.js",
   "css": "dist/index.css",
-  "author": "<作者名称>",
+  "author": "Sakura no Hoshi",
   "version": "1.0.0",
-  "homePage": "<仓库URL>",
+  "minimum_client_version": "1.14.0",
+  "homePage": "https://github.com/shijinkarusui/SillyTavern-Depth-Relocator",
   "auto_update": true,
-  "i18n": {
-    "en": "i18n/en.json"
-  }
+  "generate_interceptor": "stDepthRelocatorGenerateInterceptor"
 }

@@ -11,14 +11,16 @@ declare module 'vue' {
     t: typeof t;
   }
 }
+
 const i18n = {
-  install: (app: App) => {
-    app.config.globalProperties.t = t;
+  install: (installedApp: App) => {
+    installedApp.config.globalProperties.t = t;
   },
 };
 app.use(i18n);
 
 export function initPanel() {
-  const $app = $('<div id="tavern_extension_example">').appendTo('#extensions_settings2');
-  app.mount($app[0]);
+  if (document.getElementById('st_depth_relocator')) return;
+  const root = $('<div id="st_depth_relocator">').appendTo('#extensions_settings2');
+  app.mount(root[0]);
 }

@@ -15,10 +15,10 @@ const externals = {
   '@popperjs/core': 'Popper',
 } as const;
 
-const relative_sillytavern_path = path.relative(
-  path.join(__dirname, 'dist'),
-  __dirname.substring(0, __dirname.lastIndexOf('public') + 6),
-);
+// Third-party extensions are loaded from:
+// public/scripts/extensions/third-party/<extension>/dist/index.js
+// Keep these imports portable when the extension is built outside a SillyTavern checkout.
+const relative_sillytavern_path = '../../../../../';
 
 export default defineConfig(({ mode }) => ({
   plugins: [

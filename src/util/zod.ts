@@ -1,12 +1,12 @@
 export function validateInplace<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = parsePrettified(schema, data);
-  return _.assign(data, result) as T;
+  return Object.assign(data as object, result) as T;
 }
 
 export function parsePrettified<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
   if (!result.success) {
-    throw Error(z.prettifyError(result.error));
+    throw Error(result.error.message);
   }
   return result.data;
 }

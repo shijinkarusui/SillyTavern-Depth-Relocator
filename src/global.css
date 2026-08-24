@@ -1,0 +1,30 @@
+#st_depth_relocator .depth-relocator__hint {
+  opacity: 0.75;
+  margin: 0.35rem 0;
+}
+
+#st_depth_relocator .depth-relocator__status {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 0.35rem;
+}
+
+#st_depth_relocator .depth-relocator__status--warning {
+  color: var(--SmartThemeWarningColor, #e6a23c);
+}
+
+#st_depth_relocator .depth-relocator__row {
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.45rem 0;
+}
+
+#st_depth_relocator .depth-relocator__row label {
+  flex: 1;
+}
+
+#st_depth_relocator .depth-relocator__row input[type='number'],
+#st_depth_relocator .depth-relocator__row select {
+  min-width: 7rem;
+}
