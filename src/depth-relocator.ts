@@ -226,11 +226,11 @@ function flattenRoot(root: MessageCollection): Array<Record<string, unknown>> {
 }
 
 async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
-  if (event.dryRun || main_api !== 'openai' || !generationContext) return;
-  const context = generationContext;
+  if (event.dryRun || main_api !== 'openai') return;
+  const capturedContext = generationContext;
+  generationContext = null;
   const settings = currentSettings();
   const config = getPresetConfig(settings);
-  generationContext = null;
   if (!config?.enabled) return;
   if (settings.squash_system_messages) {
     warnOnce('当前预设启用了“合并连续系统消息”，Depth 边界已不可安全识别，本次不重排。');
@@ -238,13 +238,22 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   }
 
   const root = getRootMessages();
+  const chatHistory = root?.getItemByIdentifier(CHAT_HISTORY_ID);
+  const runtimeChatLength = chatHistory instanceof MessageCollection
+    ? chatHistory.getCollection().filter(item => item instanceof Message).length
+    : event.chat.length;
+  const context = capturedContext && capturedContext.chatLength > 0
+    ? capturedContext
+    : {
+      type: capturedContext?.type || 'normal',
+      chatLength: runtimeChatLength,
+    };
   const promptCollection = promptManager?.getPromptCollection(context.type);
   if (!root || !promptCollection) {
     warnOnce('无法取得当前 Chat Completion 的内部提示词结构，本次不重排。');
     return;
   }
 
-  const chatHistory = root.getItemByIdentifier(CHAT_HISTORY_ID);
   if (!(chatHistory instanceof MessageCollection)) {
     warnOnce('当前提示词中没有可识别的 chatHistory Maker，本次不重排。');
     return;
@@ -263,25 +272,29 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   const partition = partitionDepthCandidates(candidates, config);
   const chatHistoryMessages = chatHistory.getCollection().filter(item => item instanceof Message) as Message[];
   const byIdentifier = new Map(chatHistoryMessages.map(message => [message.identifier, message]));
+  const usedMessages = new Set<Message>();
+  const findCandidateMessage = (candidate: DepthCandidate): Message | undefined => {
+    const identified = candidate.identifier ? byIdentifier.get(candidate.identifier) : undefined;
+    if (identified && !usedMessages.has(identified) && sameContent(identified, candidate)) return identified;
+    return chatHistoryMessages.find(message => !usedMessages.has(message) && sameContent(message, candidate));
+  };
   const selected = [...partition.before, ...partition.after];
 
   for (const candidate of selected) {
-    const message = candidate.identifier ? byIdentifier.get(candidate.identifier) : undefined;
+    const message = findCandidateMessage(candidate);
     if (!message) {
       warnOnce('Depth 消息定位结果缺少对应的 chatHistory 消息，本次保持原提示词不变。');
       return;
     }
-    if (!sameContent(message, candidate)) {
-      warnOnce('Depth 消息定位结果与 SillyTavern 原始结构不一致，本次保持原提示词不变。');
-      return;
-    }
+    usedMessages.add(message);
   }
 
+  usedMessages.clear();
   const beforeMessages = partition.before
-    .map(candidate => candidate.identifier ? byIdentifier.get(candidate.identifier) : undefined)
+    .map(candidate => findCandidateMessage(candidate))
     .filter((message): message is Message => message !== undefined);
   const afterMessages = partition.after
-    .map(candidate => candidate.identifier ? byIdentifier.get(candidate.identifier) : undefined)
+    .map(candidate => findCandidateMessage(candidate))
     .filter((message): message is Message => message !== undefined);
   if (beforeMessages.length === 0 && afterMessages.length === 0) return;
 
@@ -380,12 +393,25 @@ function captureGeneration(chat: unknown, _contextSize: unknown, _abort: unknown
 }
 
 export function initDepthRelocator(): void {
-  (globalThis as Record<string, unknown>).stDepthRelocatorGenerateInterceptor = captureGeneration;
+  const interceptorKey = 'stDepthRelocatorGenerateInterceptor';
+  (globalThis as Record<string, unknown>)[interceptorKey] = captureGeneration;
+  // SillyTavern resolves generate_interceptor callbacks from the page window.
+  // Explicitly bridge the module realm so third-party module loading cannot hide the callback.
+  if (typeof window !== 'undefined') {
+    (window as unknown as Record<string, unknown>)[interceptorKey] = captureGeneration;
+  }
   eventSource.on(event_types.SETTINGS_LOADED, () => void bootstrapCurrentPreset());
   eventSource.on(event_types.OAI_PRESET_CHANGED_BEFORE, (event: unknown) => void onPresetChangedBefore(event as PresetChangedBeforeEvent));
   eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
     generationContext = null;
     refreshPanelState();
+  });
+  eventSource.on(event_types.GENERATION_STARTED, (type: unknown, _params: unknown, dryRun: unknown) => {
+    if (dryRun) {
+      generationContext = null;
+      return;
+    }
+    generationContext = { type: String(type || 'normal'), chatLength: 0 };
   });
   eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (event: unknown) => void rewriteReadyPrompt(event as PromptReadyEvent));
   eventSource.on(event_types.GENERATION_STOPPED, () => {
