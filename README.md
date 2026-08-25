@@ -43,6 +43,14 @@ pnpm build
 
 构建产物位于 `dist/index.js` 和 `dist/index.css`，与 SillyTavern 扩展清单中的入口一致。
 
+## 致谢与技术来源
+
+本项目的扩展目录结构、入口配置和部分开发工作流基于 [StageDog/tavern_extension_template](https://github.com/StageDog/tavern_extension_template)。感谢该模板及其维护者；模板贡献者不等同于本插件 Depth 重排功能的作者或维护者。
+
+运行时依赖 SillyTavern 1.14.0 及以上版本提供的 Chat Completion Prompt Manager、`promptManager`、`Message` / `MessageCollection`、`oai_settings` 和 `CHAT_COMPLETION_PROMPT_READY` 事件。界面与构建使用 Vue、Pinia、VueUse、Vite、Tailwind CSS 等开源项目，并使用 SillyTavern 提供的 jQuery、Lodash、Toastr 等运行时库。
+
+GitHub Contributors 页面会根据提交历史自动统计贡献者，因此可能显示模板同步提交者或 `github-actions[bot]`。这不代表他们参与了本插件的 Depth 重排实现；本节用于说明技术来源和致谢，不替代各依赖项目原有的版权与许可证声明。
+
 ## 运行时安全策略
 
 扩展在最终 Chat Completion 提示词就绪事件中使用 SillyTavern 的内部 `chatHistory-N` 标识定位 Depth 注入消息，而不是仅凭消息文本匹配。如果消息结构无法与 SillyTavern 的 Depth 注入算法一致，扩展会保持原提示词不变并提示用户。
