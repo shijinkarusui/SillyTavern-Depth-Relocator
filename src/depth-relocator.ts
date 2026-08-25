@@ -63,7 +63,10 @@ function currentSettings(): PresetSettings {
 }
 
 function activeCharacterId(): number | string {
-  return (promptManager as unknown as { activeCharacter?: { id?: number | string } } | null)?.activeCharacter?.id ?? CHAT_COMPLETION_DUMMY_ID;
+  return (
+    (promptManager as unknown as { activeCharacter?: { id?: number | string } } | null)?.activeCharacter?.id ??
+    CHAT_COMPLETION_DUMMY_ID
+  );
 }
 
 function warnOnce(message: string): void {
@@ -84,7 +87,9 @@ function textContent(value: unknown): string {
 
 function extensionDepths(): number[] {
   const depths = new Set<number>();
-  for (const value of Object.values(extension_prompts as Record<string, { position?: number; depth?: number; value?: unknown }>)) {
+  for (const value of Object.values(
+    extension_prompts as Record<string, { position?: number; depth?: number; value?: unknown }>,
+  )) {
     if (value?.position !== extension_prompt_types.IN_CHAT) continue;
     if (!Number.isInteger(value.depth) || (value.depth ?? -1) < 0) continue;
     depths.add(value.depth as number);
@@ -105,7 +110,10 @@ function roleNumber(role: string): number {
   return extension_prompt_roles.SYSTEM;
 }
 
-async function buildDepthCandidates(promptCollection: { collection: PromptLike[] }, baseChatLength: number): Promise<DepthCandidate[]> {
+async function buildDepthCandidates(
+  promptCollection: { collection: PromptLike[] },
+  baseChatLength: number,
+): Promise<DepthCandidate[]> {
   const prompts = promptCollection.collection;
   const depths = [...new Set([...promptDepths(prompts), ...extensionDepths()])].sort((a, b) => a - b);
   const pendingCandidates: Array<DepthCandidate & { preReverseIndex: number }> = [];
@@ -113,7 +121,10 @@ async function buildDepthCandidates(promptCollection: { collection: PromptLike[]
 
   for (const depth of depths) {
     const depthPrompts = prompts.filter(
-      prompt => prompt.injection_position === INJECTION_POSITION.ABSOLUTE && prompt.injection_depth === depth && textContent(prompt.content),
+      prompt =>
+        prompt.injection_position === INJECTION_POSITION.ABSOLUTE &&
+        prompt.injection_depth === depth &&
+        textContent(prompt.content),
     );
     const orderGroups = new Map<number, PromptLike[]>();
     orderGroups.set(EXTENSION_ORDER, []);
@@ -133,9 +144,10 @@ async function buildDepthCandidates(promptCollection: { collection: PromptLike[]
           .filter(prompt => prompt.role === role)
           .map(prompt => textContent(prompt.content))
           .join('\n');
-        const extensionPrompt = order === EXTENSION_ORDER
-          ? await getExtensionPrompt(extension_prompt_types.IN_CHAT, depth, '\n', roleNumber(role), false)
-          : '';
+        const extensionPrompt =
+          order === EXTENSION_ORDER
+            ? await getExtensionPrompt(extension_prompt_types.IN_CHAT, depth, '\n', roleNumber(role), false)
+            : '';
         const jointPrompt = [rolePrompts, textContent(extensionPrompt)]
           .filter(Boolean)
           .map(value => value.trim())
@@ -174,7 +186,10 @@ function sameContent(message: Message, candidate: DepthCandidate): boolean {
   return message.role === candidate.role && textContent(message.content) === candidate.content;
 }
 
-function runtimePromptIndex(item: Message | MessageCollection, promptCollection: { index(identifier: string): number }): number | null {
+function runtimePromptIndex(
+  item: Message | MessageCollection,
+  promptCollection: { index(identifier: string): number },
+): number | null {
   const index = promptCollection.index(item.identifier);
   return index >= 0 ? index : null;
 }
@@ -186,11 +201,14 @@ function replaceRuntimeMarkers(
   afterMessages: Message[],
 ): void {
   const markerIdentifiers = new Set([BEFORE_MARKER_ID, AFTER_MARKER_ID]);
-  const rootCollection = root.getCollection().filter(
-    (item): item is Message | MessageCollection => item !== undefined
-      && !(item instanceof MessageCollection && markerIdentifiers.has(item.identifier)),
-  );
-  const getPromptIndex = (item: Message | MessageCollection): number | null => runtimePromptIndex(item, promptCollection);
+  const rootCollection = root
+    .getCollection()
+    .filter(
+      (item): item is Message | MessageCollection =>
+        item !== undefined && !(item instanceof MessageCollection && markerIdentifiers.has(item.identifier)),
+    );
+  const getPromptIndex = (item: Message | MessageCollection): number | null =>
+    runtimePromptIndex(item, promptCollection);
 
   insertByPromptOrder(
     rootCollection,
@@ -211,7 +229,7 @@ function flattenRoot(root: MessageCollection): Array<Record<string, unknown>> {
   const result: Array<Record<string, unknown>> = [];
   for (const item of root.getCollection()) {
     if (item instanceof MessageCollection) {
-      result.push(...item.getChat() as Array<Record<string, unknown>>);
+      result.push(...(item.getChat() as Array<Record<string, unknown>>));
     } else if (item instanceof Message && (item.content || item.tool_calls)) {
       result.push({
         role: item.role,
@@ -239,15 +257,17 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
 
   const root = getRootMessages();
   const chatHistory = root?.getItemByIdentifier(CHAT_HISTORY_ID);
-  const runtimeChatLength = chatHistory instanceof MessageCollection
-    ? chatHistory.getCollection().filter(item => item instanceof Message).length
-    : event.chat.length;
-  const context = capturedContext && capturedContext.chatLength > 0
-    ? capturedContext
-    : {
-      type: capturedContext?.type || 'normal',
-      chatLength: runtimeChatLength,
-    };
+  const runtimeChatLength =
+    chatHistory instanceof MessageCollection
+      ? chatHistory.getCollection().filter(item => item instanceof Message).length
+      : event.chat.length;
+  const context =
+    capturedContext && capturedContext.chatLength > 0
+      ? capturedContext
+      : {
+          type: capturedContext?.type || 'normal',
+          chatLength: runtimeChatLength,
+        };
   const promptCollection = promptManager?.getPromptCollection(context.type);
   if (!root || !promptCollection) {
     warnOnce('无法取得当前 Chat Completion 的内部提示词结构，本次不重排。');
@@ -265,8 +285,9 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
     return;
   }
 
-  const continuePrefill = context.type === 'continue'
-    && Boolean((oai_settings as unknown as { continue_prefill?: boolean }).continue_prefill);
+  const continuePrefill =
+    context.type === 'continue' &&
+    Boolean((oai_settings as unknown as { continue_prefill?: boolean }).continue_prefill);
   const baseChatLength = Math.max(0, context.chatLength - (continuePrefill ? 1 : 0));
   const candidates = await buildDepthCandidates(promptCollection, baseChatLength);
   const partition = partitionDepthCandidates(candidates, config);
@@ -299,7 +320,9 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   if (beforeMessages.length === 0 && afterMessages.length === 0) return;
 
   const movedIds = new Set([...beforeMessages, ...afterMessages].map(message => message.identifier));
-  chatHistory.collection = chatHistory.getCollection().filter(item => !(item instanceof Message && movedIds.has(item.identifier)));
+  chatHistory.collection = chatHistory
+    .getCollection()
+    .filter(item => !(item instanceof Message && movedIds.has(item.identifier)));
 
   replaceRuntimeMarkers(root, promptCollection, beforeMessages, afterMessages);
   replaceArrayContents(event.chat, flattenRoot(root));
@@ -320,7 +343,8 @@ export function refreshPanelState(): void {
   if (!apiSupported) statusMessage = '当前 API 不是 Chat Completion，插件不会生效。';
   else if (!settings.preset_settings_openai) statusMessage = '当前没有选中的 Chat Completion 预设。';
   else if (!config) statusMessage = '当前预设尚未配置，插件不会生效。';
-  else if (!markers.chatHistory || !markers.before || !markers.after) statusMessage = '当前预设缺少 Maker，请点击“修复 Maker”。';
+  else if (!markers.chatHistory || !markers.before || !markers.after)
+    statusMessage = '当前预设缺少 Maker，请点击“修复 Maker”。';
   else if (settings.squash_system_messages) statusMessage = '当前预设启用了系统消息合并，重排会自动跳过。';
   else statusMessage = config.enabled ? '插件已启用。' : '插件已配置但处于关闭状态。';
 
@@ -346,8 +370,12 @@ async function saveCurrentPreset(): Promise<void> {
 
 export async function saveConfig(config: DepthRelocatorConfig): Promise<void> {
   const settings = currentSettings();
-  const normalizedRangeDepth = Number.isFinite(Number(config.rangeDepth)) ? Math.max(0, Math.trunc(Number(config.rangeDepth))) : DEFAULT_CONFIG.rangeDepth;
-  const normalizedSplitDepth = Number.isFinite(Number(config.splitDepth)) ? Math.max(0, Math.trunc(Number(config.splitDepth))) : DEFAULT_CONFIG.splitDepth;
+  const normalizedRangeDepth = Number.isFinite(Number(config.rangeDepth))
+    ? Math.max(0, Math.trunc(Number(config.rangeDepth)))
+    : DEFAULT_CONFIG.rangeDepth;
+  const normalizedSplitDepth = Number.isFinite(Number(config.splitDepth))
+    ? Math.max(0, Math.trunc(Number(config.splitDepth)))
+    : DEFAULT_CONFIG.splitDepth;
   settings.extensions ??= {};
   settings.extensions[PLUGIN_KEY] = {
     version: 1,
@@ -401,7 +429,10 @@ export function initDepthRelocator(): void {
     (window as unknown as Record<string, unknown>)[interceptorKey] = captureGeneration;
   }
   eventSource.on(event_types.SETTINGS_LOADED, () => void bootstrapCurrentPreset());
-  eventSource.on(event_types.OAI_PRESET_CHANGED_BEFORE, (event: unknown) => void onPresetChangedBefore(event as PresetChangedBeforeEvent));
+  eventSource.on(
+    event_types.OAI_PRESET_CHANGED_BEFORE,
+    (event: unknown) => void onPresetChangedBefore(event as PresetChangedBeforeEvent),
+  );
   eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
     generationContext = null;
     refreshPanelState();
@@ -413,7 +444,9 @@ export function initDepthRelocator(): void {
     }
     generationContext = { type: String(type || 'normal'), chatLength: 0 };
   });
-  eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (event: unknown) => rewriteReadyPrompt(event as PromptReadyEvent));
+  eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (event: unknown) =>
+    rewriteReadyPrompt(event as PromptReadyEvent),
+  );
   eventSource.on(event_types.GENERATION_STOPPED, () => {
     generationContext = null;
   });

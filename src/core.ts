@@ -88,7 +88,8 @@ export function insertByPromptOrder<T>(
   }
 
   if (insertionIndex === collection.length) {
-    insertionIndex = lastKnownIndex >= 0 ? lastKnownIndex + 1 : firstUnknownIndex >= 0 ? firstUnknownIndex : collection.length;
+    insertionIndex =
+      lastKnownIndex >= 0 ? lastKnownIndex + 1 : firstUnknownIndex >= 0 ? firstUnknownIndex : collection.length;
   }
   collection.splice(insertionIndex, 0, item);
 }

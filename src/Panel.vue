@@ -32,17 +32,41 @@
 
         <div v-if="draft.rangeMode !== 'all'" class="depth-relocator__row flex-container">
           <label for="st-depth-relocator-range-depth">范围 N</label>
-          <input id="st-depth-relocator-range-depth" v-model.number="draft.rangeDepth" class="text_pole" min="0" type="number" />
+          <input
+            id="st-depth-relocator-range-depth"
+            v-model.number="draft.rangeDepth"
+            class="text_pole"
+            min="0"
+            type="number"
+          />
         </div>
 
         <div class="depth-relocator__row flex-container">
           <label for="st-depth-relocator-split-depth">分割深度</label>
-          <input id="st-depth-relocator-split-depth" v-model.number="draft.splitDepth" class="text_pole" min="0" type="number" />
+          <input
+            id="st-depth-relocator-split-depth"
+            v-model.number="draft.splitDepth"
+            class="text_pole"
+            min="0"
+            type="number"
+          />
         </div>
 
         <div class="depth-relocator__row flex-container">
-          <input class="menu_button" type="button" value="保存当前预设" :disabled="!panelState.presetName" @click="save" />
-          <input class="menu_button" type="button" value="修复 Maker" :disabled="!panelState.presetName" @click="repair" />
+          <input
+            class="menu_button"
+            type="button"
+            value="保存当前预设"
+            :disabled="!panelState.presetName"
+            @click="save"
+          />
+          <input
+            class="menu_button"
+            type="button"
+            value="修复 Maker"
+            :disabled="!panelState.presetName"
+            @click="repair"
+          />
         </div>
 
         <div class="depth-relocator__status">
@@ -68,7 +92,13 @@ watch(
   { immediate: true },
 );
 
-const hasWarning = computed(() => !panelState.apiSupported || !panelState.configured || panelState.statusMessage.includes('缺少') || panelState.squashSystemMessages);
+const hasWarning = computed(
+  () =>
+    !panelState.apiSupported ||
+    !panelState.configured ||
+    panelState.statusMessage.includes('缺少') ||
+    panelState.squashSystemMessages,
+);
 
 async function save(): Promise<void> {
   if (!panelState.presetName) {

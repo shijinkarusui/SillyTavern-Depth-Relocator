@@ -69,7 +69,10 @@ function ensurePrompt(prompts: PromptLike[], identifier: string, name: string): 
   return changed;
 }
 
-function getOrder(settings: PresetSettings, activeCharacterId: number | string): { list: PromptOrderList; created: boolean } | null {
+function getOrder(
+  settings: PresetSettings,
+  activeCharacterId: number | string,
+): { list: PromptOrderList; created: boolean } | null {
   settings.prompt_order ??= [];
   const existing = settings.prompt_order.find(item => String(item.character_id) === String(activeCharacterId));
   if (existing) return { list: existing, created: false };
@@ -82,7 +85,12 @@ function getOrder(settings: PresetSettings, activeCharacterId: number | string):
   return { list: fallback, created: true };
 }
 
-function insertAdjacent(order: PromptOrderEntry[], markerId: string, chatHistoryIndex: number, after: boolean): boolean {
+function insertAdjacent(
+  order: PromptOrderEntry[],
+  markerId: string,
+  chatHistoryIndex: number,
+  after: boolean,
+): boolean {
   if (order.some(entry => entry.identifier === markerId)) return false;
   order.splice(after ? chatHistoryIndex + 1 : chatHistoryIndex, 0, { identifier: markerId, enabled: true });
   return true;
@@ -95,7 +103,10 @@ function ensureMarkerEnabled(order: PromptOrderEntry[], markerId: string): boole
   return true;
 }
 
-export function ensureMarkersInSettings(settings: PresetSettings, activeCharacterId: number | string = CHAT_COMPLETION_DUMMY_ID): EnsureMarkersResult {
+export function ensureMarkersInSettings(
+  settings: PresetSettings,
+  activeCharacterId: number | string = CHAT_COMPLETION_DUMMY_ID,
+): EnsureMarkersResult {
   settings.prompts ??= [];
   const chatHistory = settings.prompts.some(prompt => prompt.identifier === CHAT_HISTORY_ID);
   if (!chatHistory) {
@@ -122,8 +133,12 @@ export function ensureMarkersInSettings(settings: PresetSettings, activeCharacte
   return { changed, status: { ...status, chatHistory } };
 }
 
-export function getMarkerStatus(settings: PresetSettings, activeCharacterId: number | string = CHAT_COMPLETION_DUMMY_ID): MarkerStatus {
-  const order = settings.prompt_order?.find(item => String(item.character_id) === String(activeCharacterId))?.order ?? [];
+export function getMarkerStatus(
+  settings: PresetSettings,
+  activeCharacterId: number | string = CHAT_COMPLETION_DUMMY_ID,
+): MarkerStatus {
+  const order =
+    settings.prompt_order?.find(item => String(item.character_id) === String(activeCharacterId))?.order ?? [];
   return {
     before: order.some(entry => entry.identifier === BEFORE_MARKER_ID),
     after: order.some(entry => entry.identifier === AFTER_MARKER_ID),
