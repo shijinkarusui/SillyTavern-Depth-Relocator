@@ -16,6 +16,12 @@
 - 只处理真正通过 Depth 注入的提示词，不处理普通聊天历史、世界书前后置内容或非 Depth 扩展提示词。
 - 当前预设未配置、功能关闭、Text Completion 或系统消息合并开启时不进行重排。
 
+## TauriTavern 兼容性
+
+插件依赖宿主正确保存 Chat Completion 预设和用户设置。TauriTavern v2.2.0 正式版存在已知的设置保存回归：从旧版本导入数据后，设置修订缓存可能与磁盘内容失配，导致保存失败；而预设重命名本身是“先保存新名称，再删除旧名称”，因此失败时可能表现为新预设没有落盘、列表回到空的默认项。
+
+这不是插件主动清空预设造成的。相关问题见 [TauriTavern Issue #172](https://github.com/Darkatse/TauriTavern/issues/172) 和 [Issue #156](https://github.com/Darkatse/TauriTavern/issues/156)，宿主修复提交为 [f5afa579](https://github.com/Darkatse/TauriTavern/commit/f5afa579ad5b6b3dd8340dc1415646896b9a875d)。使用 TauriTavern 时请升级到包含该提交的版本或 Canary；v2.2.0 正式版不在已修复范围内。
+
 ## 安装
 
 在 SillyTavern 的 Extensions 面板中，通过第三方扩展 Git URL 安装本仓库：
