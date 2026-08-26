@@ -82,4 +82,12 @@ describe('Maker bootstrap', () => {
     expect(result.changed).toBe(false);
     expect(getMarkerStatus(preset)).toEqual({ before: false, after: false, chatHistory: false });
   });
+
+  it('does not materialize empty prompts for a temporary empty preset', () => {
+    const preset: PresetSettings = {};
+    const result = ensureMarkersInSettings(preset);
+
+    expect(result.changed).toBe(false);
+    expect(preset).toEqual({});
+  });
 });

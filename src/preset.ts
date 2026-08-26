@@ -107,13 +107,15 @@ export function ensureMarkersInSettings(
   settings: PresetSettings,
   activeCharacterId: number | string = CHAT_COMPLETION_DUMMY_ID,
 ): EnsureMarkersResult {
-  settings.prompts ??= [];
-  const chatHistory = settings.prompts.some(prompt => prompt.identifier === CHAT_HISTORY_ID);
+  const chatHistory = settings.prompts?.some(prompt => prompt.identifier === CHAT_HISTORY_ID) === true;
   if (!chatHistory) {
     return { changed: false, status: getMarkerStatus(settings, activeCharacterId) };
   }
-  const changedBefore = ensurePrompt(settings.prompts, BEFORE_MARKER_ID, BEFORE_MARKER_NAME);
-  const changedAfter = ensurePrompt(settings.prompts, AFTER_MARKER_ID, AFTER_MARKER_NAME);
+  const prompts = settings.prompts;
+  if (!prompts) return { changed: false, status: getMarkerStatus(settings, activeCharacterId) };
+
+  const changedBefore = ensurePrompt(prompts, BEFORE_MARKER_ID, BEFORE_MARKER_NAME);
+  const changedAfter = ensurePrompt(prompts, AFTER_MARKER_ID, AFTER_MARKER_NAME);
   const orderResult = getOrder(settings, activeCharacterId);
   let changed = changedBefore || changedAfter || orderResult?.created === true;
 
