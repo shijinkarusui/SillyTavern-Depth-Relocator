@@ -22,13 +22,7 @@ import {
   PLUGIN_KEY,
   type MarkerStatus,
 } from '@/preset';
-import type {
-  GenerationContext,
-  PanelState,
-  PresetSettings,
-  PromptLike,
-  PromptReadyEvent,
-} from '@/types';
+import type { GenerationContext, PanelState, PresetSettings, PromptLike, PromptReadyEvent } from '@/types';
 import {
   eventSource,
   event_types,
