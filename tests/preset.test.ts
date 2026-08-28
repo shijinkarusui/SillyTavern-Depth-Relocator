@@ -83,6 +83,23 @@ describe('Maker bootstrap', () => {
     expect(getMarkerStatus(preset)).toEqual({ before: false, after: false, chatHistory: false });
   });
 
+  it('does not mutate a configured preset when only reading marker status', () => {
+    const preset = settings();
+    preset.extensions = {
+      st_depth_relocator: {
+        version: 1,
+        enabled: true,
+        rangeMode: 'all',
+        rangeDepth: 5,
+        splitDepth: 5,
+      },
+    };
+    const before = structuredClone(preset);
+
+    expect(getMarkerStatus(preset)).toEqual({ before: false, after: false, chatHistory: true });
+    expect(preset).toEqual(before);
+  });
+
   it('does not materialize empty prompts for a temporary empty preset', () => {
     const preset: PresetSettings = {};
     const result = ensureMarkersInSettings(preset);

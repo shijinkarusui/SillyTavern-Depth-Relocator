@@ -9,7 +9,8 @@
 
 ## 功能
 
-- 首次加载当前预设时，在 `chatHistory` 前后创建两个 Maker 标记。
+- 仅在配置页手动点击“添加/修复 Maker”后，才在 `chatHistory` 前后创建两个 Maker 标记。
+- 插件安装、启动和切换预设都不会自动插入或保存 Maker；保存配置也不会隐式创建 Maker。
 - 配置保存在当前 Chat Completion 预设的 `extensions.st_depth_relocator` 中。
 - 支持 `D ≤ N`、`D ≥ N` 和 `全部 Depth` 三种拦截范围。
 - `D ≤ 分割深度` 的条目移动到 `深度后`，其余选中条目移动到 `深度前`。

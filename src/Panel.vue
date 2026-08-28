@@ -63,7 +63,7 @@
           <input
             class="menu_button"
             type="button"
-            value="修复 Maker"
+            value="添加/修复 Maker"
             :disabled="!panelState.presetName"
             @click="repair"
           />

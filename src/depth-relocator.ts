@@ -25,7 +25,6 @@ import {
 import type {
   GenerationContext,
   PanelState,
-  PresetChangedBeforeEvent,
   PresetSettings,
   PromptLike,
   PromptReadyEvent,
@@ -384,7 +383,6 @@ export async function saveConfig(config: DepthRelocatorConfig): Promise<void> {
     rangeDepth: normalizedRangeDepth,
     splitDepth: normalizedSplitDepth,
   } satisfies DepthRelocatorConfig;
-  ensureMarkersInSettings(settings, activeCharacterId());
   await saveCurrentPreset();
   refreshPanelState();
 }
@@ -392,25 +390,11 @@ export async function saveConfig(config: DepthRelocatorConfig): Promise<void> {
 export async function repairMarkers(): Promise<void> {
   const settings = currentSettings();
   const result = ensureMarkersInSettings(settings, activeCharacterId());
-  if (result.changed) await saveCurrentPreset();
-  refreshPanelState();
-}
-
-async function bootstrapCurrentPreset(): Promise<void> {
-  const settings = currentSettings();
-  if (!settings.prompts?.some(prompt => prompt.identifier === CHAT_HISTORY_ID)) {
-    refreshPanelState();
-    return;
+  if (result.changed) {
+    await saveCurrentPreset();
+    promptManager?.render(false);
   }
-  const result = ensureMarkersInSettings(settings, activeCharacterId());
-  if (result.changed) await saveCurrentPreset();
-  promptManager?.render(false);
   refreshPanelState();
-}
-
-async function onPresetChangedBefore(event: PresetChangedBeforeEvent): Promise<void> {
-  const result = ensureMarkersInSettings(event.preset, activeCharacterId());
-  if (result.changed) await event.savePreset?.(event.presetName, event.preset, false);
 }
 
 function captureGeneration(chat: unknown, _contextSize: unknown, _abort: unknown, type: unknown): void {
@@ -428,11 +412,7 @@ export function initDepthRelocator(): void {
   if (typeof window !== 'undefined') {
     (window as unknown as Record<string, unknown>)[interceptorKey] = captureGeneration;
   }
-  eventSource.on(event_types.SETTINGS_LOADED, () => void bootstrapCurrentPreset());
-  eventSource.on(
-    event_types.OAI_PRESET_CHANGED_BEFORE,
-    (event: unknown) => void onPresetChangedBefore(event as PresetChangedBeforeEvent),
-  );
+  eventSource.on(event_types.SETTINGS_LOADED, () => setTimeout(refreshPanelState, 0));
   eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
     generationContext = null;
     refreshPanelState();
@@ -453,7 +433,7 @@ export function initDepthRelocator(): void {
   eventSource.on(event_types.GENERATION_ENDED, () => {
     generationContext = null;
   });
-  setTimeout(() => void bootstrapCurrentPreset(), 0);
+  setTimeout(refreshPanelState, 0);
   refreshPanelState();
 }
 
