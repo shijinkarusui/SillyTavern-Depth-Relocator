@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, getChatHistoryIdentifier, getDepthInsertionIndex, insertByPromptOrder, partitionDepthCandidates, replaceArrayContents, type DepthCandidate } from '@/core';
+import {
+  DEFAULT_CONFIG,
+  getChatHistoryIdentifier,
+  getDepthInsertionIndex,
+  insertByPromptOrder,
+  matchDepthCandidates,
+  partitionDepthCandidates,
+  replaceArrayContents,
+  type DepthCandidate,
+} from '@/core';
 
 const candidates: DepthCandidate[] = Array.from({ length: 100 }, (_, depth) => ({
   depth,
@@ -94,6 +103,26 @@ describe('Depth selection and partitioning', () => {
     });
 
     expect(result.after.map(item => item.content)).toEqual(['first', 'second', 'third']);
+  });
+
+  it('keeps matching candidates when another Depth message was omitted at runtime', () => {
+    const selected = [
+      { depth: 1, role: 'system', content: 'kept', identifier: 'chatHistory-3' },
+      { depth: 2, role: 'system', content: 'omitted', identifier: 'chatHistory-2' },
+    ];
+    const messages = [{ identifier: 'chatHistory-3', role: 'system', content: 'kept' }];
+
+    const matches = matchDepthCandidates(selected, messages);
+
+    expect(matches.get(selected[0])).toBe(messages[0]);
+    expect(matches.has(selected[1])).toBe(false);
+  });
+
+  it('does not match a candidate to a message with the same identifier but different content', () => {
+    const selected = [{ depth: 1, role: 'system', content: 'expected', identifier: 'chatHistory-3' }];
+    const messages = [{ identifier: 'chatHistory-3', role: 'system', content: 'changed' }];
+
+    expect(matchDepthCandidates(selected, messages).size).toBe(0);
   });
 
   it('supports selecting every Depth', () => {

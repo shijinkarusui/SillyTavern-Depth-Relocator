@@ -5,6 +5,7 @@ import {
   getChatHistoryIdentifier,
   getDepthInsertionIndex,
   insertByPromptOrder,
+  matchDepthCandidates,
   parseConfig,
   partitionDepthCandidates,
   replaceArrayContents,
@@ -175,10 +176,6 @@ function getRootMessages(): MessageCollection | null {
   return manager?.messages instanceof MessageCollection ? manager.messages : null;
 }
 
-function sameContent(message: Message, candidate: DepthCandidate): boolean {
-  return message.role === candidate.role && textContent(message.content) === candidate.content;
-}
-
 function runtimePromptIndex(
   item: Message | MessageCollection,
   promptCollection: { index(identifier: string): number },
@@ -283,30 +280,12 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   const candidates = await buildDepthCandidates(promptCollection, baseChatLength);
   const partition = partitionDepthCandidates(candidates, config);
   const chatHistoryMessages = chatHistory.getCollection().filter(item => item instanceof Message) as Message[];
-  const byIdentifier = new Map(chatHistoryMessages.map(message => [message.identifier, message]));
-  const usedMessages = new Set<Message>();
-  const findCandidateMessage = (candidate: DepthCandidate): Message | undefined => {
-    const identified = candidate.identifier ? byIdentifier.get(candidate.identifier) : undefined;
-    if (identified && !usedMessages.has(identified) && sameContent(identified, candidate)) return identified;
-    return chatHistoryMessages.find(message => !usedMessages.has(message) && sameContent(message, candidate));
-  };
-  const selected = [...partition.before, ...partition.after];
-
-  for (const candidate of selected) {
-    const message = findCandidateMessage(candidate);
-    if (!message) {
-      warnOnce('Depth 消息定位结果缺少对应的 chatHistory 消息，本次保持原提示词不变。');
-      return;
-    }
-    usedMessages.add(message);
-  }
-
-  usedMessages.clear();
+  const matches = matchDepthCandidates([...partition.before, ...partition.after], chatHistoryMessages);
   const beforeMessages = partition.before
-    .map(candidate => findCandidateMessage(candidate))
+    .map(candidate => matches.get(candidate))
     .filter((message): message is Message => message !== undefined);
   const afterMessages = partition.after
-    .map(candidate => findCandidateMessage(candidate))
+    .map(candidate => matches.get(candidate))
     .filter((message): message is Message => message !== undefined);
   if (beforeMessages.length === 0 && afterMessages.length === 0) return;
 

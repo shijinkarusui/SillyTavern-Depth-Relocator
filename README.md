@@ -61,7 +61,7 @@ GitHub Contributors 页面会根据提交历史自动统计贡献者，因此可
 
 ## 运行时安全策略
 
-扩展在最终 Chat Completion 提示词就绪事件中使用 SillyTavern 的内部 `chatHistory-N` 标识定位 Depth 注入消息，而不是仅凭消息文本匹配。如果消息结构无法与 SillyTavern 的 Depth 注入算法一致，扩展会保持原提示词不变并提示用户。
+扩展在最终 Chat Completion 提示词就绪事件中使用 SillyTavern 的内部 `chatHistory-N` 标识定位 Depth 注入消息，并用角色和内容校验匹配结果。运行时因 token 预算等原因未保留的单个 Depth 消息会被忽略，仍会重排成功定位的其他消息；如果没有任何可定位消息，则保持原提示词不变。
 
 当预设启用 `squash_system_messages` 时，原始 Maker 边界不可安全恢复，因此该次请求会跳过重排。
 MVU 额外模型解析等独立请求可能不包含主聊天的 `chatHistory` 容器；扩展会直接跳过这类请求，不修改其提示词，也不报告 Maker 警告。

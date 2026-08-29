@@ -15,6 +15,12 @@ export interface DepthCandidate {
   identifier?: string;
 }
 
+export interface DepthMessageLike {
+  identifier?: string;
+  role: string;
+  content: unknown;
+}
+
 export const DEFAULT_CONFIG: DepthRelocatorConfig = {
   version: 1,
   enabled: false,
@@ -97,6 +103,44 @@ export function insertByPromptOrder<T>(
 /** Preserve an event-owned array reference while replacing its contents. */
 export function replaceArrayContents<T>(target: T[], source: readonly T[]): void {
   target.splice(0, target.length, ...source);
+}
+
+function messageText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(item => String(item)).join('');
+  return value == null ? '' : String(value);
+}
+
+/**
+ * Match each candidate independently. A runtime token budget can omit only
+ * some Depth messages, so missing candidates must not invalidate the ones
+ * that are still present.
+ */
+export function matchDepthCandidates<T extends DepthMessageLike>(
+  candidates: readonly DepthCandidate[],
+  messages: readonly T[],
+): Map<DepthCandidate, T> {
+  const byIdentifier = new Map(
+    messages.flatMap(message => (message.identifier ? [[message.identifier, message] as const] : [])),
+  );
+  const usedMessages = new Set<T>();
+  const matches = new Map<DepthCandidate, T>();
+
+  for (const candidate of candidates) {
+    const isSameMessage = (message: T | undefined): message is T =>
+      Boolean(message && message.role === candidate.role && messageText(message.content) === candidate.content);
+    const identified = candidate.identifier ? byIdentifier.get(candidate.identifier) : undefined;
+    const message = isSameMessage(identified)
+      ? identified
+      : messages.find(item => !usedMessages.has(item) && isSameMessage(item));
+
+    if (message) {
+      usedMessages.add(message);
+      matches.set(candidate, message);
+    }
+  }
+
+  return matches;
 }
 
 export function partitionDepthCandidates(candidates: readonly DepthCandidate[], config: DepthRelocatorConfig) {
