@@ -256,8 +256,7 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
     return;
   }
 
-  const runtimeChatLength =
-    chatHistory.getCollection().filter(item => item instanceof Message).length;
+  const runtimeChatLength = chatHistory.getCollection().filter(item => item instanceof Message).length;
   const context =
     capturedContext && capturedContext.chatLength > 0
       ? capturedContext
