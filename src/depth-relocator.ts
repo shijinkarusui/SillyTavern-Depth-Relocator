@@ -243,17 +243,21 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
   const settings = currentSettings();
   const config = getPresetConfig(settings);
   if (!config?.enabled) return;
+
+  const root = getRootMessages();
+  // MVU 的额外模型解析也会触发该事件，但它使用独立的提示词集合，通常没有 chatHistory。
+  // 这类请求不属于主聊天提示词，必须静默跳过，避免误报 Maker/结构错误。
+  if (!root) return;
+  const chatHistory = root?.getItemByIdentifier(CHAT_HISTORY_ID);
+  if (!(chatHistory instanceof MessageCollection)) return;
+
   if (settings.squash_system_messages) {
     warnOnce('当前预设启用了“合并连续系统消息”，Depth 边界已不可安全识别，本次不重排。');
     return;
   }
 
-  const root = getRootMessages();
-  const chatHistory = root?.getItemByIdentifier(CHAT_HISTORY_ID);
   const runtimeChatLength =
-    chatHistory instanceof MessageCollection
-      ? chatHistory.getCollection().filter(item => item instanceof Message).length
-      : event.chat.length;
+    chatHistory.getCollection().filter(item => item instanceof Message).length;
   const context =
     capturedContext && capturedContext.chatLength > 0
       ? capturedContext
@@ -262,13 +266,8 @@ async function rewriteReadyPrompt(event: PromptReadyEvent): Promise<void> {
           chatLength: runtimeChatLength,
         };
   const promptCollection = promptManager?.getPromptCollection(context.type);
-  if (!root || !promptCollection) {
+  if (!promptCollection) {
     warnOnce('无法取得当前 Chat Completion 的内部提示词结构，本次不重排。');
-    return;
-  }
-
-  if (!(chatHistory instanceof MessageCollection)) {
-    warnOnce('当前提示词中没有可识别的 chatHistory Maker，本次不重排。');
     return;
   }
   const beforeIndex = promptCollection.index(BEFORE_MARKER_ID);

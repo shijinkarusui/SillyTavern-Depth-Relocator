@@ -15,6 +15,7 @@
 - 支持 `D ≤ N`、`D ≥ N` 和 `全部 Depth` 三种拦截范围。
 - `D ≤ 分割深度` 的条目移动到 `深度后`，其余选中条目移动到 `深度前`。
 - 只处理真正通过 Depth 注入的提示词，不处理普通聊天历史、世界书前后置内容或非 Depth 扩展提示词。
+- 对不含 `chatHistory` 容器的独立请求（例如 MVU 额外模型解析）静默跳过，不显示无关的结构告警。
 - 当前预设未配置、功能关闭、Text Completion 或系统消息合并开启时不进行重排。
 
 ## TauriTavern 兼容性
@@ -63,3 +64,4 @@ GitHub Contributors 页面会根据提交历史自动统计贡献者，因此可
 扩展在最终 Chat Completion 提示词就绪事件中使用 SillyTavern 的内部 `chatHistory-N` 标识定位 Depth 注入消息，而不是仅凭消息文本匹配。如果消息结构无法与 SillyTavern 的 Depth 注入算法一致，扩展会保持原提示词不变并提示用户。
 
 当预设启用 `squash_system_messages` 时，原始 Maker 边界不可安全恢复，因此该次请求会跳过重排。
+MVU 额外模型解析等独立请求可能不包含主聊天的 `chatHistory` 容器；扩展会直接跳过这类请求，不修改其提示词，也不报告 Maker 警告。
