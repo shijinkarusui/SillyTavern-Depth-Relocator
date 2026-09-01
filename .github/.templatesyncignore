@@ -1,3 +1,4 @@
 .github/workflows
 dist
 README.md
+pnpm-lock.yaml
