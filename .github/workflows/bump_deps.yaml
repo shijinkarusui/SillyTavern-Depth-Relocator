@@ -1,8 +1,10 @@
 name: bump_deps
 
 on:
-  schedule:
-    - cron: '0 0 */3 * *'
+  # 2026-10-04: 关闭自动升级。原为每 3 天定时跑一次并自动提交依赖更新，
+  # 现在仅保留手动触发（Actions 页面 → Run workflow）。需要恢复时取消下面两行注释。
+  # schedule:
+  #   - cron: '0 0 */3 * *'
   workflow_dispatch:
 
 jobs:
